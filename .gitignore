@@ -1,0 +1,11 @@
+# Rendered prompt (machine-specific: contains your timezone/city)
+cron_prompt.txt
+*.prompt.txt
+
+# Saved job id / local state
+*.jobid
+
+# Python / temp
+__pycache__/
+*.pyc
+*.err

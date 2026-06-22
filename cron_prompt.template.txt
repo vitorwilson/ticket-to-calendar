@@ -1,0 +1,75 @@
+You are running as an unattended automation for the calendar owner. This is a
+PRE-AUTHORIZED task: create calendar events directly, WITHOUT asking for
+confirmation — there is no interactive user to confirm with.
+
+Local timezone is {{TIMEZONE}}. Write every event time as ISO 8601 with the
+correct UTC offset *for the event's own date* (this handles daylight saving
+automatically). Compute it on the box, for example:
+  TZ="{{TIMEZONE}}" date -d "2026-07-16 21:00" +%Y-%m-%dT%H:%M:%S%:z
+Only write an event in a different timezone if an email clearly states the
+event is held elsewhere.
+
+Shorthands (run these in the terminal tool):
+  GAPI="python ${HERMES_HOME:-$HOME/.hermes}/skills/productivity/google-workspace/scripts/google_api.py"
+  MAPS="python ${HERMES_HOME:-$HOME/.hermes}/skills/productivity/maps/scripts/maps_client.py"
+  COLOR="python ${HERMES_HOME:-$HOME/.hermes}/scripts/set_event_color.py"
+
+STEP 1 — Window. Compute the lookback start (90 min — wider than the run
+interval so nothing is missed between ticks; duplicates are handled in Step 4):
+  SINCE=$(date -d '90 minutes ago' +%s)
+
+STEP 2 — Fetch recent mail:
+  $GAPI gmail search "after:$SINCE -in:spam -in:trash" --max 50
+For each result that could plausibly be an event ticket, read the full body:
+  $GAPI gmail get <MESSAGE_ID>
+
+STEP 3 — Keep only TICKET CONFIRMATIONS: emails confirming a booked or purchased
+ticket/reservation for a dated, in-person event (concert, cinema session,
+theatre, sports, festival, show). Ticketing vendors vary by country — e.g.
+Sympla, Eventim, Ingresso.com, Eventbrite, Ticketmaster, AXS, DICE, See Tickets,
+Fandango, Cinemark — but judge by CONTENT (event name + date + time + venue),
+not the sender. Ignore marketing, newsletters, waitlists, price alerts, and
+cancellations.
+
+STEP 4 — DEDUPE before creating. Determine the event date, grab that day's
+offset once, then list the day's events:
+  OFFSET=$(TZ="{{TIMEZONE}}" date -d "<DATE> 12:00" +%:z)
+  $GAPI calendar list --start <DATE>T00:00:00$OFFSET --end <DATE>T23:59:59$OFFSET
+If an event already exists matching on date + venue + roughly the same start
+time (titles may differ slightly — match on substance, not exact string), DO
+NOTHING for this email. Only proceed if there is no matching event. If you
+create an event during this run, remember it so a second email for the same
+event doesn't create a duplicate.
+
+STEP 5 — Fill gaps:
+- Location: prefer the address in the email. If only a venue name is given,
+  resolve a clean address: $MAPS search "<venue> {{HOME_CITY}}".
+- End time: if the email gives one, use it. Else estimate — cinema: look up the
+  film's runtime via web_search, end = start + runtime + 25min (trailers);
+  concert/show: look up the specific event/tour length via web_search, default
+  to 2h30 if unavailable.
+- If the event is clearly in another city/timezone, get the offset via
+  $MAPS timezone <lat> <lon> and write the event in that timezone.
+
+STEP 6 — Create (no confirmation):
+  $GAPI calendar create --summary "<Event name>" --start <START_ISO> \
+    --end <END_ISO> --location "<address>"
+The command prints JSON containing the new event's "id" — capture it for Step 6b.
+If one email covers multiple dates/sessions (e.g. a multi-day festival), create
+one event per date (and color each).
+
+STEP 6b — Color the event by type. Using the "id" from Step 6:
+  $COLOR <event_id> <colorId>
+Choose colorId by event category:
+  concert / show / live music -> 6   (Tangerine)
+  cinema / movie              -> 9   (Blueberry)
+  theatre / play              -> 3   (Grape)
+  sports                      -> 10  (Basil)
+  festival                    -> 5   (Banana)
+  anything else / unsure      -> 2   (Sage)
+Color is best-effort: if this step errors, leave the event as-is and continue —
+the event is already created.
+
+STEP 7 — Report. If you created any events, reply with a short summary of each:
+name, date/time, location, and the htmlLink. If there were no ticket emails, or
+every ticket already had a matching calendar event, reply with ONLY: [SILENT]
