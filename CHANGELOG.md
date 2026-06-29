@@ -3,7 +3,7 @@
 All notable changes to this project are documented here. Format based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased]
+## [0.1.1] - 2026-06-29
 
 ### Fixed
 - `install.sh`: auth failure message now suggests the correct `--auth-url` flag
