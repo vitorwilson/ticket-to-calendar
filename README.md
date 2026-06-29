@@ -132,6 +132,17 @@ ticks — `run` on its own may wait for the next hour.)
   was added.
 - **Inspect any run**: `~/.hermes/cron/output/<job-id>/<timestamp>.md`. Gated
   (skipped) ticks just say `Script gate returned wakeAgent=false — agent skipped`.
+- **Google auth fails (`TOKEN_REVOKED` / `REFRESH_FAILED`)** — re-authorize with
+  `python ~/.hermes/skills/productivity/google-workspace/scripts/setup.py --auth-url`,
+  follow the OAuth flow, then verify with `--check-live`. Re-run `./install.sh`
+  afterward (or just `hermes cron run <id> >/dev/null; hermes cron tick` to test).
+- **Auth dies every ~7 days** — your Google Cloud OAuth app is in "Testing"
+  publishing status. Google expires refresh tokens after 7 days in Testing mode.
+  Fix: go to <https://console.cloud.google.com/auth/audience>, set the consent
+  screen to "In production", and confirm. No Google verification review is needed
+  for a personal-use Desktop app — you'll see a one-time "Google hasn't verified
+  this app" warning, which is fine. After publishing, the refresh token stops
+  expiring on the 7-day clock.
 
 ## Uninstall
 

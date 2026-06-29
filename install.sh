@@ -41,7 +41,7 @@ TODAY="$(date +%F)"
 if $GAPI calendar list --start "${TODAY}T00:00:00Z" --end "${TODAY}T23:59:59Z" >/dev/null 2>&1; then
   ok "Google Calendar auth works"
 else
-  die "Google auth failed. Run: python $HERMES_HOME/skills/productivity/google-workspace/scripts/setup.py"
+  die "Google auth failed. Re-authorize: python $HERMES_HOME/skills/productivity/google-workspace/scripts/setup.py --auth-url (then follow the OAuth flow). If this recurs every ~7 days, your OAuth app is still in Testing mode — publish it to Production at https://console.cloud.google.com/auth/audience"
 fi
 
 # Cron-platform toolsets (best effort — needs a TTY).

@@ -55,3 +55,7 @@ The portable artifacts are **the prompt** (the logic) and **the two helper scrip
 ## Backend model / quota note
 
 Cron agent runs use whatever LLM Hermes is configured with. `HTTP 429 RESOURCE_EXHAUSTED` means a rate-limited/free tier — switch the model. The pre-check gate mitigates but does not eliminate this on busy hours.
+
+## Google OAuth token lifecycle
+
+The google-workspace skill stores a refresh token at `~/.hermes/google_token.json`. If the OAuth Cloud Console app's publishing status is **"Testing"**, Google expires refresh tokens after **7 days** — this causes recurring `TOKEN_REVOKED` / `REFRESH_FAILED` on weekly re-auth. The fix is to set the consent screen to **"In production"** at `https://console.cloud.google.com/auth/audience`. A personal Desktop app using Gmail/Calendar/Drive scopes stays "unverified" (100-user cap, one-time warning) but does **not** need Google verification review — the refresh token then becomes long-lived.
